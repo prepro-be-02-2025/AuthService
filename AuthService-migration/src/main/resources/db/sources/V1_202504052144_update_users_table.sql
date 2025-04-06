@@ -1,0 +1,2 @@
+ALTER TABLE users ADD keycloak_id VARCHAR(255) NOT NULL;
+ALTER TABLE users ADD username VARCHAR(255) NOT NULL;

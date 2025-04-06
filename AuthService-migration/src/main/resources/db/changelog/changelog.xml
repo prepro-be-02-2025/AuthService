@@ -1,0 +1,8 @@
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
+    <!--     onValidationFail xác định hành động nếu checksum của ChangeSet không khớp. -->
+    <!--     MARK_RAN có nghĩa là naếu checksum không khớp (ví dụ, tệp SQL đã thay đổi),
+        Liquibase sẽ đánh dấu ChangeSet là đã chạy mà không thực thi lại. -->
+    <changeSet author="son.nguyen" id="V1_202504051652_create_users_table" onValidationFail="MARK_RAN">
+        <sqlFile dbms="mysql" path="classpath:/db/sources/V1_202504051652_create_users_table.sql" relativeToChangelogFile="false"/>
+    </changeSet>
+</databaseChangeLog>

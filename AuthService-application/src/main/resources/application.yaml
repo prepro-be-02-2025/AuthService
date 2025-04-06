@@ -1,0 +1,42 @@
+spring:
+  application:
+    name: AuthService-application
+  datasource:
+    url: jdbc:mysql://localhost:3306/pro_be_auth
+    username: root
+    password: password
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          jwk-set-uri: http://localhost:8080/realms/SonNS_realm/protocol/openid-connect/certs
+  jpa:
+    properties:
+      hibernate:
+        show_sql: true
+  kafka:
+    bootstrap-servers: localhost:9092
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+
+logging:
+  level:
+    org.hibernate.sql: debug
+
+server:
+  port: 8091
+
+keycloak:
+  realm: SonNS_realm
+  server-url: http://localhost:8080
+  client-id: quan_ly_ke_toan
+  client-secret: 2hew13lEtOYUIlvA6sGuhuEZrpO8eYHz
+
+url:
+  permit:
+    - path: "api/v1/register"
+      methods: ["POST"]
+    - path: "api/v1/logout"
+      methods: [ "POST" ]
