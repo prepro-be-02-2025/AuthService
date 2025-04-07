@@ -126,7 +126,7 @@ public class UsersServiceImpl implements UsersService {
 
             return ResponseEntity.ok("Reset password link sent to user's email.");
         } catch (NotFoundException e){
-            return ResponseEntity.internalServerError().body("Notfound Error: "+ e.getMessage());
+            return ResponseEntity.internalServerError().body("User not found: "+ username);
         }
         catch (Exception e){
             return ResponseEntity.internalServerError().body("Error: "+ e.getMessage());
