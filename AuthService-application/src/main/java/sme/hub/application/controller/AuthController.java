@@ -5,6 +5,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import sme.hub.business.dto.CreateUsersRequest;
+import sme.hub.business.dto.UpdateUserPassword;
 import sme.hub.business.services.UsersService;
 
 @RestController
@@ -25,4 +26,15 @@ public class AuthController {
         usersService.logout(refreshToken);
         return ResponseEntity.ok("Logged out successfully");
     }
+
+    @PutMapping("/reset")
+    public ResponseEntity<String> resetPassword(@Valid @RequestBody UpdateUserPassword user) {
+        return usersService.reset(user);
+    }
+
+    @PostMapping("/forgot-password")
+    public ResponseEntity<String> forgotPassword(@RequestParam("username") String username){
+        return usersService.forgot(username);
+    }
+
 }

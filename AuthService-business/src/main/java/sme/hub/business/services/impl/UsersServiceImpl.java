@@ -1,8 +1,10 @@
 package sme.hub.business.services.impl;
 
+import jakarta.ws.rs.NotFoundException;
 import jakarta.ws.rs.core.Response;
 import lombok.RequiredArgsConstructor;
 import org.keycloak.admin.client.Keycloak;
+import org.keycloak.admin.client.resource.UserResource;
 import org.keycloak.representations.idm.CredentialRepresentation;
 import org.keycloak.representations.idm.UserRepresentation;
 import org.springframework.stereotype.Service;
@@ -11,12 +13,15 @@ import org.springframework.util.MultiValueMap;
 import sme.hub.business.config.KeycloakConfigProperties;
 import sme.hub.business.dto.CreateUsersDto;
 import sme.hub.business.dto.CreateUsersRequest;
+import sme.hub.business.dto.UpdateUserPassword;
 import sme.hub.business.repo.UsersRepo;
 import sme.hub.business.services.UsersService;
 import org.springframework.http.*;
 import org.springframework.web.client.RestTemplate;
 
+import javax.management.InvalidAttributeValueException;
 import java.util.Collections;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -76,6 +81,55 @@ public class UsersServiceImpl implements UsersService {
             restTemplate.postForEntity(logoutUrl, request, String.class);
         } catch (Exception e) {
             throw new IllegalStateException("Failed to logout: " + e.getMessage(), e);
+        }
+    }
+    @Override
+    public String getUserIdByUsername(String username) {
+        return keycloak.realm(keycloakConfig.getRealm()).users().search(username).stream()
+                .filter(user -> username.equalsIgnoreCase(user.getUsername()))
+                .findFirst()
+                .map(UserRepresentation::getId)
+                .orElseThrow(() -> new NotFoundException("User not found: " + username));
+    }
+
+    @Override
+    public ResponseEntity<String> reset(UpdateUserPassword user) {
+        try {
+            if(!user.getPassword().equals(user.getConfirmPassword())){
+                throw new InvalidAttributeValueException("Invalid password");
+            }
+            CredentialRepresentation newCredential = new CredentialRepresentation();
+            newCredential.setType(CredentialRepresentation.PASSWORD);
+            newCredential.setValue(user.getPassword());
+            newCredential.setTemporary(false);
+
+            UserResource userResource = keycloak.realm(keycloakConfig.getRealm()).users().get(user.getUserId());
+            userResource.resetPassword(newCredential);
+            return ResponseEntity.ok("Password changed");
+        } catch (InvalidAttributeValueException e){
+            return ResponseEntity.badRequest().body("Invalid error: "+ e.getMessage());
+        }
+        catch (Exception e){
+            return ResponseEntity.internalServerError().body("Error: "+ e.getMessage());
+        }
+    }
+
+    @Override
+    public ResponseEntity<String> forgot(String username) {
+        try{
+            String userId = getUserIdByUsername(username);
+            UserResource userResource = keycloak.realm(keycloakConfig.getRealm()).users().get(userId);
+            List<String> actions = List.of("UPDATE_PASSWORD");
+            int lifespanInSeconds = 900;
+
+            userResource.executeActionsEmail(actions, lifespanInSeconds);
+
+            return ResponseEntity.ok("Reset password link sent to user's email.");
+        } catch (NotFoundException e){
+            return ResponseEntity.internalServerError().body("Notfound Error: "+ e.getMessage());
+        }
+        catch (Exception e){
+            return ResponseEntity.internalServerError().body("Error: "+ e.getMessage());
         }
     }
 }
