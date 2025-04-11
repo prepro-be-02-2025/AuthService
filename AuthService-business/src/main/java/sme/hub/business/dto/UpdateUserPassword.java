@@ -14,10 +14,13 @@ public class UpdateUserPassword {
     String userId;
 
     @NotBlank
-    @Pattern(regexp = "^(?=.*\\d).{4,8}$", flags = Pattern.Flag.UNICODE_CASE)
-    String password;
+    String username;
 
     @NotBlank
     @Pattern(regexp = "^(?=.*\\d).{4,8}$", flags = Pattern.Flag.UNICODE_CASE)
-    String confirmPassword;
+    String oldPassword;
+
+    @NotBlank
+    @Pattern(regexp = "^(?=.*\\d).{4,8}$", flags = Pattern.Flag.UNICODE_CASE)
+    String newPassword;
 }

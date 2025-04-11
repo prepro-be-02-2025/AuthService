@@ -4,6 +4,7 @@ import jakarta.ws.rs.NotFoundException;
 import jakarta.ws.rs.core.Response;
 import lombok.RequiredArgsConstructor;
 import org.keycloak.admin.client.Keycloak;
+import org.keycloak.admin.client.Keycloak;
 import org.keycloak.admin.client.resource.UserResource;
 import org.keycloak.representations.idm.CredentialRepresentation;
 import org.keycloak.representations.idm.UserRepresentation;
@@ -15,6 +16,7 @@ import sme.hub.business.dto.CreateUsersDto;
 import sme.hub.business.dto.CreateUsersRequest;
 import sme.hub.business.dto.UpdateUserPassword;
 import sme.hub.business.repo.UsersRepo;
+import sme.hub.business.services.KeycloakPasswordValidator;
 import sme.hub.business.services.UsersService;
 import org.springframework.http.*;
 import org.springframework.web.client.RestTemplate;
@@ -30,6 +32,7 @@ public class UsersServiceImpl implements UsersService {
     private final UsersRepo usersRepo;
     private final Keycloak keycloak;
     private final KeycloakConfigProperties keycloakConfig;
+    private final KeycloakPasswordValidator keycloakPasswordValidator;
 
     @Override
     public void register(CreateUsersRequest request) {
@@ -93,29 +96,43 @@ public class UsersServiceImpl implements UsersService {
     }
 
     @Override
-    public ResponseEntity<String> reset(UpdateUserPassword user) {
+    public String reset(UpdateUserPassword user) {
         try {
-            if(!user.getPassword().equals(user.getConfirmPassword())){
-                throw new InvalidAttributeValueException("Invalid password");
+            boolean isValid = Boolean.TRUE.equals(keycloakPasswordValidator
+                    .validateCurrentPassword(
+                            keycloakConfig.getRealm(),
+                            keycloakConfig.getClientId(),
+                            user.getUsername(),
+                            user.getOldPassword()
+                    ).block());
+
+            if (!isValid) {
+                throw new InvalidAttributeValueException("Current password is incorrect.");
             }
+
+            UserResource userResource = keycloak
+                    .realm(keycloakConfig.getRealm())
+                    .users()
+                    .get(user.getUserId());
+
             CredentialRepresentation newCredential = new CredentialRepresentation();
             newCredential.setType(CredentialRepresentation.PASSWORD);
-            newCredential.setValue(user.getPassword());
+            newCredential.setValue(user.getNewPassword());
             newCredential.setTemporary(false);
 
-            UserResource userResource = keycloak.realm(keycloakConfig.getRealm()).users().get(user.getUserId());
             userResource.resetPassword(newCredential);
-            return ResponseEntity.ok("Password changed");
-        } catch (InvalidAttributeValueException e){
-            return ResponseEntity.badRequest().body("Invalid error: "+ e.getMessage());
-        }
-        catch (Exception e){
-            return ResponseEntity.internalServerError().body("Error: "+ e.getMessage());
+            return "Password changed";
+
+        } catch (InvalidAttributeValueException e) {
+            return "Validation error: " + e.getMessage();
+        } catch (Exception e) {
+            return "Error: " + e.getMessage();
         }
     }
 
+
     @Override
-    public ResponseEntity<String> forgot(String username) {
+    public String forgot(String username) {
         try{
             String userId = getUserIdByUsername(username);
             UserResource userResource = keycloak.realm(keycloakConfig.getRealm()).users().get(userId);
@@ -124,12 +141,12 @@ public class UsersServiceImpl implements UsersService {
 
             userResource.executeActionsEmail(actions, lifespanInSeconds);
 
-            return ResponseEntity.ok("Reset password link sent to user's email.");
+            return "Reset password link sent to user's email.";
         } catch (NotFoundException e){
-            return ResponseEntity.internalServerError().body("User not found: "+ username);
+            return "User not found: "+ username;
         }
         catch (Exception e){
-            return ResponseEntity.internalServerError().body("Error: "+ e.getMessage());
+            return "Error: "+ e.getMessage();
         }
     }
 }

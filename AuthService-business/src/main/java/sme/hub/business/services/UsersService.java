@@ -9,7 +9,7 @@ public interface UsersService {
     void register(CreateUsersRequest request);
     void logout(String refreshToken);
     String getUserIdByUsername(String username);
-    ResponseEntity<String> reset(UpdateUserPassword user);
-    ResponseEntity<String> forgot(String username);
+    String reset(UpdateUserPassword user);
+    String forgot(String username);
 
 }

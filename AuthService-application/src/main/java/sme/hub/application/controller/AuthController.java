@@ -29,12 +29,12 @@ public class AuthController {
 
     @PutMapping("/reset")
     public ResponseEntity<String> resetPassword(@Valid @RequestBody UpdateUserPassword user) {
-        return usersService.reset(user);
+        return ResponseEntity.ok(usersService.reset(user));
     }
 
     @PostMapping("/forgot-password")
     public ResponseEntity<String> forgotPassword(@RequestParam("username") String username){
-        return usersService.forgot(username);
+        return ResponseEntity.ok(usersService.forgot(username));
     }
 
 }
